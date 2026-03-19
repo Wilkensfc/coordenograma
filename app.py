@@ -112,6 +112,42 @@ try:
     ax.legend(title="Legenda", bbox_to_anchor=(1.05, 1), loc='upper left', fontsize='x-small')
     
     st.pyplot(fig)
+    import io
+
+# Criar um buffer na memória para salvar a imagem
+buf = io.BytesIO()
+fig.savefig(buf, format="png", dpi=300, bbox_inches='tight')
+
+# Botão de download da imagem
+st.download_button(
+    label="🖼️ Baixar Gráfico (PNG)",
+    data=buf.getvalue(),
+    file_name="coordenograma_protecao.png",
+    mime="image/png"
+)
+
+# ... (após o comando st.pyplot(fig))
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        # Preparar download da imagem
+        buf = io.BytesIO()
+        fig.savefig(buf, format="png", dpi=300, bbox_inches='tight')
+        st.download_button(
+            label="🖼️ Baixar Gráfico (PNG)",
+            data=buf.getvalue(),
+            file_name="coordenograma.png",
+            mime="image/png"
+        )
+
+    with col2:
+        # Botão do Memorial que já tínhamos
+        st.download_button(
+            label="📥 Baixar Memorial (TXT)",
+            data=memorial,
+            file_name="memorial.txt"
+        )
     st.download_button("📥 Baixar Memorial", memorial, file_name="memorial.txt")
 
 except Exception as e:
