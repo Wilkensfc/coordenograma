@@ -47,9 +47,10 @@ try:
     # --- GRÁFICO ---
     st.title("📊 Coordenograma de Proteção 13.8kV")
     fig, ax = plt.subplots(figsize=(12, 8))
-    plt.subplots_adjust(right=0.7)
+    # Ajuste da margem direita para acomodar legenda e memorial
+    plt.subplots_adjust(right=0.75)
 
-    # 1. LINHAS VERTICAIS (LEGENDADAS)
+    # 1. LINHAS VERTICAIS
     ax.axvline(in_fase, color='red', linestyle='--', lw=1.5, label=f'In Sistema ({in_fase:.1f}A)', zorder=1)
     ax.axvline(im_total_edificacao, color='orange', linestyle=':', lw=2, label=f'Im Total ({im_total_edificacao:.1f}A)', zorder=1)
     ax.axvline(icc_total, color='black', lw=2, label=f'Icc ({icc_total}A)', zorder=1)
@@ -62,7 +63,7 @@ try:
     ax.loglog([10000, i_inst_neutro, i_inst_neutro, ip_neutro, ip_neutro], [0.01, 0.01, t_temp_neutro, t_temp_neutro, 300], color='green', lw=3, label='Neutro (50N/51N)', zorder=3)
 
     # 3. PONTOS TRAFOS
-    colors = ['darkred', 'darkorange', 'purple', 'magenta', 'brown']
+    colors = ['darkred', 'darkorange', 'purple', 'magenta', 'brown', 'teal', 'olive']
     for i in range(num_trafos):
         c = colors[i % len(colors)]
         ax.plot(im_trafos[i], 0.1, 'o', color=c, label=f'Inrush T{i+1}', zorder=4)
@@ -70,24 +71,21 @@ try:
         t_ansi = 2.0 if z_list[i] <= 4 else 3.0
         ax.plot(ansi_i, t_ansi, 'x', mew=2, color=c, label=f'ANSI T{i+1}', zorder=5)
 
-    # --- CONFIGURAÇÃO DO EIXO X (1 a 10.000) ---
+    # CONFIGURAÇÃO DO EIXO X (1 a 10.000)
     ax.set_xlim(1, 10000)
     ax.set_ylim(0.01, 300)
     
-    # Forçar as décadas (1, 10, 100...) no eixo X
     ax.xaxis.set_major_locator(LogLocator(base=10.0, numticks=10))
     x_fmt = ScalarFormatter()
     x_fmt.set_scientific(False)
     ax.xaxis.set_major_formatter(x_fmt)
-
-    # Formatação do eixo Y
     ax.yaxis.set_major_formatter(FuncFormatter(lambda x, p: f"{x:.2f}" if x < 1 else f"{int(x)}"))
     
     plt.grid(True, which="both", ls="-", alpha=0.2)
     plt.xlabel("Corrente (A)")
     plt.ylabel("Tempo (s)")
     
-    # Memorial
+    # --- MEMORIAL DE CÁLCULO (POSIÇÃO CORRIGIDA) ---
     trafos_txt = "".join([f"T{i+1}: {kva_list[i]}kVA | Z:{z_list[i]}%\n" for i in range(num_trafos)])
     memorial = (
         "RESUMO DOS CÁLCULOS\n"
@@ -105,11 +103,16 @@ try:
         f"51N: {ip_neutro:.1f}A | {t_temp_neutro}s\n"
         f"50N: {i_inst_neutro:.1f}A"
     )
-    plt.text(1.05, 0.5, memorial, transform=ax.transAxes, fontsize=10, verticalalignment='center', bbox=dict(facecolor='white', alpha=0.9))
+    
+    # O valor 0.15 no segundo parâmetro "desce" a tabela para longe da legenda
+    plt.text(1.05, 0.15, memorial, transform=ax.transAxes, fontsize=9, 
+             verticalalignment='bottom', bbox=dict(facecolor='white', alpha=0.9, edgecolor='gray'))
 
-    ax.legend(title="Legenda", bbox_to_anchor=(1.05, 1), loc='upper left', fontsize='small')
+    # Legenda com fonte menor para evitar sobreposição
+    ax.legend(title="Legenda", bbox_to_anchor=(1.05, 1), loc='upper left', fontsize='x-small')
+    
     st.pyplot(fig)
     st.download_button("📥 Baixar Memorial", memorial, file_name="memorial.txt")
 
 except Exception as e:
-    st.info("Aguardando dados válidos...")
+    st.info("Aguardando preenchimento dos dados...")
