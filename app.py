@@ -49,7 +49,8 @@ try:
         ansi_f_t_list.append(t_ansi)
 
     max_im = max(im_trafo_calculated)
-    im_total_edificacao = max_im + (sum(in_trafo_individual) - in_trafo_individual[im_trafo_calculated.index(max_im)])
+    idx_max = im_trafo_calculated.index(max_im)
+    im_total_edificacao = max_im + (sum(in_trafo_individual) - in_trafo_individual[idx_max])
 
     i_inst_fase = 1.01 * im_total_edificacao
     i_inst_neutro = 0.33 * i_inst_fase
@@ -60,6 +61,11 @@ try:
     fig, ax = plt.subplots(figsize=(12, 8))
     plt.subplots_adjust(right=0.7)
 
+    # 1. LINHAS DE REFERÊNCIA (NOMINAL E MAGNETIZAÇÃO)
+    ax.axvline(in_fase, color='red', linestyle='--', lw=1.5, label=f'In Sistema ({in_fase:.2f}A)')
+    ax.axvline(im_total_edificacao, color='orange', linestyle=':', lw=2, label=f'Im Total Edif. ({im_total_edificacao:.2f}A)')
+    ax.axvline(icc_total, color='black', lw=2, label=f'Icc ({icc_total}A)')
+
     # Curva Fase
     c_fase = np.logspace(np.log10(ip_fase * 1.001), np.log10(i_inst_fase), 500)
     t_fase = [calcular_tempo_ei(i, ip_fase, dt_fase) for i in c_fase]
@@ -68,24 +74,26 @@ try:
     # Curva Neutro
     ax.loglog([10000, i_inst_neutro, i_inst_neutro, ip_neutro, ip_neutro], [0.01, 0.01, t_temp_neutro, t_temp_neutro, 300], color='green', lw=3, label='Neutro (50N/51N)')
 
-    # Pontos
-    colors = ['red', 'darkorange', 'purple', 'magenta', 'brown']
+    # Pontos de Inrush e ANSI Individuais
+    colors = ['darkred', 'darkorange', 'purple', 'magenta', 'brown']
     for i in range(num_trafos):
         c = colors[i % len(colors)]
         ax.plot(im_trafo_calculated[i], 0.1, 'o', color=c, label=f'Inrush T{i+1}')
         ax.plot(ansi_f_i_list[i], ansi_f_t_list[i], 'x', color=c, mew=2, label=f'ANSI F T{i+1}')
         ax.plot(0.58 * ansi_f_i_list[i], ansi_f_t_list[i], '^', color=c, label=f'ANSI N T{i+1}')
 
-    ax.axvline(icc_total, color='black', lw=2, label=f'Icc ({icc_total}A)')
+    # Formatação dos Eixos
     ax.set_ylim(0.01, 300)
-    ax.set_xlim(1, 10000)
+    # Ajusta o limite inferior do X para sempre mostrar a In
+    ax.set_xlim(min(in_fase * 0.5, 1), 10000)
+    
     ax.yaxis.set_major_formatter(FuncFormatter(lambda x, p: f"{x:.2f}" if x < 1 else f"{int(x)}"))
     ax.xaxis.set_major_formatter(ScalarFormatter())
+    ax.get_xaxis().set_scientific(False)
     plt.grid(True, which="both", ls="-", alpha=0.2)
     
-    # Memorial (Texto formatado de forma segura)
+    # Memorial
     trafos_txt = "".join([f"T{i+1}: {kva_list[i]}kVA | Z:{z_list[i]}%\n" for i in range(num_trafos)])
-    
     memorial = (
         "RESUMO DOS CALCULOS\n"
         f"{'-'*25}\n"
