@@ -2,6 +2,7 @@ import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.ticker import FuncFormatter, ScalarFormatter, LogLocator
+import io
 
 # Configuração da Página
 st.set_page_config(page_title="Coordenograma de Proteção Pro", layout="wide")
@@ -47,7 +48,6 @@ try:
     # --- GRÁFICO ---
     st.title("📊 Coordenograma de Proteção 13.8kV")
     fig, ax = plt.subplots(figsize=(12, 8))
-    # Ajuste da margem direita para acomodar legenda e memorial
     plt.subplots_adjust(right=0.75)
 
     # 1. LINHAS VERTICAIS
@@ -71,21 +71,17 @@ try:
         t_ansi = 2.0 if z_list[i] <= 4 else 3.0
         ax.plot(ansi_i, t_ansi, 'x', mew=2, color=c, label=f'ANSI T{i+1}', zorder=5)
 
-    # CONFIGURAÇÃO DO EIXO X (1 a 10.000)
+    # EIXOS
     ax.set_xlim(1, 10000)
     ax.set_ylim(0.01, 300)
-    
     ax.xaxis.set_major_locator(LogLocator(base=10.0, numticks=10))
-    x_fmt = ScalarFormatter()
-    x_fmt.set_scientific(False)
+    x_fmt = ScalarFormatter(); x_fmt.set_scientific(False)
     ax.xaxis.set_major_formatter(x_fmt)
     ax.yaxis.set_major_formatter(FuncFormatter(lambda x, p: f"{x:.2f}" if x < 1 else f"{int(x)}"))
-    
     plt.grid(True, which="both", ls="-", alpha=0.2)
-    plt.xlabel("Corrente (A)")
-    plt.ylabel("Tempo (s)")
+    plt.xlabel("Corrente (A)"); plt.ylabel("Tempo (s)")
     
-    # --- MEMORIAL DE CÁLCULO (POSIÇÃO CORRIGIDA) ---
+    # MEMORIAL
     trafos_txt = "".join([f"T{i+1}: {kva_list[i]}kVA | Z:{z_list[i]}%\n" for i in range(num_trafos)])
     memorial = (
         "RESUMO DOS CÁLCULOS\n"
@@ -103,35 +99,18 @@ try:
         f"51N: {ip_neutro:.1f}A | {t_temp_neutro}s\n"
         f"50N: {i_inst_neutro:.1f}A"
     )
-    
-    # O valor 0.15 no segundo parâmetro "desce" a tabela para longe da legenda
-    plt.text(1.05, 0.15, memorial, transform=ax.transAxes, fontsize=9, 
-             verticalalignment='bottom', bbox=dict(facecolor='white', alpha=0.9, edgecolor='gray'))
-
-    # Legenda com fonte menor para evitar sobreposição
+    plt.text(1.05, 0.15, memorial, transform=ax.transAxes, fontsize=9, verticalalignment='bottom', bbox=dict(facecolor='white', alpha=0.9, edgecolor='gray'))
     ax.legend(title="Legenda", bbox_to_anchor=(1.05, 1), loc='upper left', fontsize='x-small')
     
+    # EXIBIÇÃO NO STREAMLIT
     st.pyplot(fig)
-    import io
 
-# Criar um buffer na memória para salvar a imagem
-buf = io.BytesIO()
-fig.savefig(buf, format="png", dpi=300, bbox_inches='tight')
-
-# Botão de download da imagem
-st.download_button(
-    label="🖼️ Baixar Gráfico (PNG)",
-    data=buf.getvalue(),
-    file_name="coordenograma_protecao.png",
-    mime="image/png"
-)
-
-# ... (após o comando st.pyplot(fig))
-    
+    # SEÇÃO DE DOWNLOADS
+    st.markdown("---")
     col1, col2 = st.columns(2)
     
     with col1:
-        # Preparar download da imagem
+        # Preparar PNG em alta resolução
         buf = io.BytesIO()
         fig.savefig(buf, format="png", dpi=300, bbox_inches='tight')
         st.download_button(
@@ -142,13 +121,12 @@ st.download_button(
         )
 
     with col2:
-        # Botão do Memorial que já tínhamos
         st.download_button(
             label="📥 Baixar Memorial (TXT)",
             data=memorial,
-            file_name="memorial.txt"
+            file_name="memorial_calculo.txt",
+            mime="text/plain"
         )
-    st.download_button("📥 Baixar Memorial", memorial, file_name="memorial.txt")
 
 except Exception as e:
-    st.info("Aguardando preenchimento dos dados...")
+    st.info("Aguardando preenchimento dos dados na barra lateral...")
