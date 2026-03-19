@@ -119,4 +119,6 @@ try:
     st.download_button("📥 Baixar Memorial", memorial, file_name="memorial.txt")
 
 except Exception as e:
-    st.info("Aguardando dados válidos...")
+    st.error(f"Erro detectado: {e}")
+    import traceback
+    st.text(traceback.format_exc())
